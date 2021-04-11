@@ -22,16 +22,14 @@ def upload():
         photo = photoform.photo.data
         filename = secure_filename(photo.filename)
         photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        upload = [{
+        upload = {
             'message': 'File Upload Successful', 
             'filename': filename, 
             'description': description
-            }]
+            }
         return jsonify(upload=upload)
     else:
-        errors = [{
-            'errors': form_errors(photoform)
-        }]
+        errors = form_errors(photoform)
         return jsonify(errors=errors)
 
 
