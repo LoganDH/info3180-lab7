@@ -7,35 +7,15 @@ This file creates your application.
 
 import os
 from app import app
-from flask import render_template, request, flash, jsonify
-from .forms import UploadForm
+from flask import render_template, request, jsonify
 from werkzeug.utils import secure_filename
+from app.forms import UploadForm
 
 ###
 # Routing for your application.
 ###
-@app.route('/api/upload', methods=['POST'])
-def upload():
-    photoform = UploadForm()
-    if request.method == 'POST' and photoform.validate_on_submit():
-        description = photoform.description.data
-        photo = photoform.photo.data
-        filename = secure_filename(photo.filename)
-        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        upload = {
-            'message': 'File Upload Successful', 
-            'filename': filename, 
-            'description': description
-            }
-        return jsonify(upload=upload)
-    else:
-        errors = form_errors(photoform)
-        return jsonify(errors=errors)
 
 
-# Please create all new routes and view functions above this route.
-# This route is now our catch all route for our VueJS single page
-# application.
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def index(path):
@@ -48,9 +28,25 @@ def index(path):
     """
     return render_template('index.html')
 
+@app.route('/api/upload', methods=['POST']) 
+def upload():
+    uploadf=UploadForm()
+    if request.method == 'POST' and uploadf.validate_on_submit():
+  
+        descr = uploadf.description.data
+        photo = photo_save(uploadf.photo.data)
 
-# Here we define a function to collect form errors from Flask-WTF
-# which we can later use
+        return jsonify(message="File Upload Successful", filename=photo, description=descr, status=200)
+    
+    else:
+        return jsonify (errors = (form_errors(uploadf)), status =500)        
+
+def photo_save(photo):
+    fn = secure_filename(photo.filename)
+    photo.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
+    return fn
+
+
 def form_errors(form):
     error_messages = []
     """Collects form errors"""
@@ -93,14 +89,6 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
-
-def flash_errors(form):
-    for field, errors in form.errors.items():
-        for error in errors:
-            flash(u"Error in the %s field - %s" % (
-                getattr(form, field).label.text,
-                error
-), 'danger')
 
 
 if __name__ == '__main__':

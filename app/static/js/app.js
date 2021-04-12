@@ -22,6 +22,9 @@ app.component('app-header', {
           <li class="nav-item active">
             <router-link class="nav-link" to="/">Home <span class="sr-only">(current)</span></router-link>
           </li>
+          <li class="nav-item active">
+            <router-link class="nav-link" to="/api/upload">Upload <span class="sr-only">(current)</span></router-link>
+          </li>
         </ul>
       </div>
     </nav>
@@ -43,6 +46,77 @@ app.component('app-footer', {
         }
     }
 });
+
+const uploadForm =  {
+    name: 'uploadForm', 
+    template: `
+    <h1>Upload Form</h1>
+    <form @submit.prevent="uploadPhoto" id="uploadForm">
+        <div class="alert" id="showAlert">
+            {{ message }}
+        <ul>
+            <li v-for = "error in errors"> {{ error }} </li>
+        </ul>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label><br>
+            <input type="text" id="description" name="description"><br>
+        </div>
+
+        <div class="form-group">
+            <label for="photo">Photo</label><br>
+            <input type="file" id="photo" name="photo" accept="image/png, image/jpeg"><br>
+        </div>
+
+        <input type="submit" value="Submit" class="btn btn-primary">
+    </form>
+    `,
+    methods: {
+        uploadPhoto() {
+            let self = this;
+            let uploadForm = document.getElementById('uploadForm');
+            let form_data = new FormData(uploadForm);
+            let displayAlert = document.getElementById('showAlert');
+            fetch("/api/upload", {
+                method: 'POST',
+                body: form_data,
+                headers: {
+                    'X-CSRFToken': token
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                // display a success message
+                if (jsonResponse['upload']) {
+                    self.message = jsonResponse['upload']['message'];
+                    self.errors = [];
+                    displayAlert.classList.add("alert-success");
+                    displayAlert.classList.remove("alert-danger");
+                }
+                else if (jsonResponse['errors']) {
+                    self.message = '';
+                    self.errors = jsonResponse['errors'];
+                    displayAlert.classList.add('alert-danger');
+                    displayAlert.classList.remove('alert-success');
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+                self.errors = error;
+            });
+        }
+    }, 
+    data() {
+        return {
+            errors: [],
+            message: '',
+         }
+    }
+};
 
 const Home = {
     name: 'Home',
@@ -73,7 +147,7 @@ const NotFound = {
 const routes = [
     { path: "/", component: Home },
     // Put other routes here
-
+    { path: "/api/upload", component: uploadForm },
     // This is a catch all route in case none of the above matches
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound }
 ];
